@@ -7,6 +7,7 @@ answer file yet, and only commits/pushes when something changed.
 import csv
 import io
 import json
+import os
 import subprocess
 import sys
 import urllib.request
@@ -40,8 +41,11 @@ def log(msg):
 def fetch(name):
     last = None
     for url in URLS[name]:
-        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github.raw",
-                                                   "User-Agent": "dso429-hw3"})
+        headers = {"Accept": "application/vnd.github.raw", "User-Agent": "dso429-hw3"}
+        # In GitHub Actions, authenticate API calls; shared runner IPs hit the anonymous rate limit.
+        if os.environ.get("GITHUB_TOKEN") and "api.github.com" in url:
+            headers["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
+        req = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 return list(csv.DictReader(io.StringIO(r.read().decode("utf-8"))))
